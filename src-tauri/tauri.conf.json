@@ -1,7 +1,7 @@
 {
-  "productName": "voxbar",
+  "productName": "whisperium",
   "version": "0.0.0",
-  "identifier": "com.satcom.voxbar",
+  "identifier": "com.satcom.whisperium",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "voxbar",
+        "title": "whisperium",
         "width": 400,
         "height": 120,
         "resizable": false,

@@ -23,7 +23,7 @@ importers:
       react-dom:
         specifier: ^19
         version: 19.2.6(react@19.2.6)
-      voxbar-stt-core:
+      whisperium-stt-core:
         specifier: workspace:*
         version: link:packages/stt-core
       zod:

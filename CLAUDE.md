@@ -7,13 +7,13 @@
 
 ## 1. Project
 
-**voxbar** — cross-platform desktop STT widget. Press a global shortcut,
+**whisperium** — cross-platform desktop STT widget. Press a global shortcut,
 speak, get text injected into the focused field. Backends: local LM Studio
 or any OpenAI-compatible cloud provider.
 
 Repo layout:
 ```
-voxbar/
+whisperium/
 ├── src/                  # React + TS frontend (HUD, settings)
 ├── src-tauri/            # Rust backend (audio, injection, IPC)
 │   ├── src/
@@ -74,7 +74,7 @@ no Redux, no MUI, no Electron. Stack is final.
 
 ## 4. SOLID applied here
 
-| Principle | Concretely in voxbar |
+| Principle | Concretely in whisperium |
 |---|---|
 | **S**RP | One provider = one file. One Zustand slice = one concern (audio, session, config, history). |
 | **O**CP | New STT backend = new `SttProvider` implementer; no edits to the session manager. |

@@ -1,5 +1,5 @@
 {
-  "name": "voxbar",
+  "name": "whisperium",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -23,7 +23,7 @@
     "@tauri-apps/plugin-global-shortcut": "^2",
     "react": "^19",
     "react-dom": "^19",
-    "voxbar-stt-core": "workspace:*",
+    "whisperium-stt-core": "workspace:*",
     "zod": "^3",
     "zustand": "^5"
   },
