@@ -1,0 +1,67 @@
+name: Auto Release
+
+# On every push to main, derive the next semver from Conventional Commits,
+# regenerate CHANGELOG.md, then commit + tag (vX.Y.Z). The tag push triggers
+# release.yml, which builds and publishes the cross-platform artifacts.
+#
+# NOTE: pushes made with the default GITHUB_TOKEN do NOT trigger further
+# workflows (release.yml). For the tag to start a release build, set a
+# repository secret RELEASE_TOKEN to a PAT with `contents: write`. Without it
+# the tag is still created, but release.yml must be started via its
+# workflow_dispatch trigger.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Tag & changelog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@git-cliff
+
+      - name: Determine next version
+        id: version
+        run: |
+          latest="$(git describe --tags --abbrev=0 2>/dev/null || echo '')"
+          next="$(git cliff --config cliff.toml --bumped-version)"
+          case "$next" in v*) ;; *) next="v$next" ;; esac
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          if [ "$next" = "$latest" ]; then
+            echo "No releasable changes since $latest — skipping."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Releasing $latest -> $next"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate changelog
+        if: steps.version.outputs.release == 'true'
+        run: git cliff --config cliff.toml --bump --tag "${{ steps.version.outputs.next }}" -o CHANGELOG.md
+
+      - name: Commit, tag and push
+        if: steps.version.outputs.release == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CHANGELOG.md
+          git commit -m "chore(release): ${{ steps.version.outputs.next }}"
+          git tag -a "${{ steps.version.outputs.next }}" -m "${{ steps.version.outputs.next }}"
+          git push origin HEAD:main
+          git push origin "${{ steps.version.outputs.next }}"
