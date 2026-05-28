@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { SttProvider, TranscribeInput, TranscribeResult, SttError } from '../types';
-import { ok, err, type Result } from '../result';
+import { type Result, err, ok } from '../result';
+import type { SttError, SttProvider, TranscribeInput, TranscribeResult } from '../types';
 
 const ResponseSchema = z.object({ text: z.string() });
 
