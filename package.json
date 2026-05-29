@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
@@ -15,7 +16,8 @@
     "check": "biome check .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "setup:icons": "tauri icon src/assets/icon.svg"
+    "setup:icons": "tauri icon src/assets/icon.svg",
+    "prepare": "husky"
   },
   "dependencies": {
     "@ricky0123/vad-web": "^0.0.21",
@@ -29,12 +31,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@playwright/test": "^1",
-    "@tauri-apps/cli": "^2",
     "@tailwindcss/vite": "^4",
+    "@tauri-apps/cli": "^2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
+    "husky": "^9.1.7",
     "jsdom": "^25",
     "tailwindcss": "^4",
     "typescript": "^5.6",
