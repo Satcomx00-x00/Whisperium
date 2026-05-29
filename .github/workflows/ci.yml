@@ -127,4 +127,7 @@ jobs:
         uses: taiki-e/install-action@nextest
 
       - name: Tests (nextest)
-        run: cargo nextest run --manifest-path src-tauri/Cargo.toml
+        # The src-tauri crate is still pure Tauri bootstrap with no testable
+        # logic yet; nextest exits non-zero on zero tests by default. Drop
+        # --no-tests=pass once real #[test]s land (see CLAUDE.md §8).
+        run: cargo nextest run --manifest-path src-tauri/Cargo.toml --no-tests=pass
