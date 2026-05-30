@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.3.2] - 2026-05-30
+
+### Bug Fixes
+
+- *(tauri)* Import Emitter and UpdaterExt traits for updater check
 ## [0.3.1] - 2026-05-30
 
 ### Bug Fixes
