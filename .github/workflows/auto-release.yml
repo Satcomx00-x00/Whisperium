@@ -39,7 +39,12 @@ jobs:
         id: version
         run: |
           latest="$(git describe --tags --abbrev=0 2>/dev/null || echo '')"
-          next="$(git cliff --config cliff.toml --bumped-version --initial-tag v0.0.0)"
+          # When no tags exist git-cliff cannot bump; seed a local v0.0.0 tag so it
+          # can compute the first real version without writing anything to the remote.
+          if [ -z "$latest" ]; then
+            git tag v0.0.0 "$(git rev-list --max-parents=0 HEAD)"
+          fi
+          next="$(git cliff --config cliff.toml --bumped-version)"
           case "$next" in v*) ;; *) next="v$next" ;; esac
           echo "latest=$latest" >> "$GITHUB_OUTPUT"
           echo "next=$next" >> "$GITHUB_OUTPUT"
@@ -53,7 +58,7 @@ jobs:
 
       - name: Generate changelog
         if: steps.version.outputs.release == 'true'
-        run: git cliff --config cliff.toml --bump --initial-tag v0.0.0 --tag "${{ steps.version.outputs.next }}" -o CHANGELOG.md
+        run: git cliff --config cliff.toml --bump --tag "${{ steps.version.outputs.next }}" -o CHANGELOG.md
 
       - name: Commit, tag and push
         if: steps.version.outputs.release == 'true'
