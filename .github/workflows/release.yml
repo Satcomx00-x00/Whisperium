@@ -1,5 +1,9 @@
 name: Release
 
+# Triggered on every push to main. Computes the next semver from Conventional
+# Commits; if there are release-worthy changes, bumps manifests, tags, generates
+# CHANGELOG, then builds cross-platform installers and publishes a GitHub Release.
+
 on:
   push:
     branches: [main]
@@ -14,7 +18,7 @@ concurrency:
 
 jobs:
   version:
-    name: Version & changelog
+    name: Tag & changelog
     runs-on: ubuntu-latest
     outputs:
       released: ${{ steps.bump.outputs.released }}
@@ -25,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Install git-cliff
         uses: taiki-e/install-action@v2
@@ -35,77 +39,91 @@ jobs:
       - name: Determine next version
         id: bump
         run: |
-          latest="$(git tag --sort=-v:refname | head -n1)"
+          latest="$(git describe --tags --abbrev=0 2>/dev/null || echo '')"
+          # Seed a local v0.0.0 on the root commit so git-cliff can bump from it
+          # when the repo has never been tagged. This tag is never pushed.
+          if [ -z "$latest" ]; then
+            git tag v0.0.0 "$(git rev-list --max-parents=0 HEAD)"
+          fi
           range="HEAD"
           [ -n "$latest" ] && range="$latest..HEAD"
           subjects="$(git log "$range" --format='%s')"
-          # Release only when feat/fix or a breaking change (`type!:`) landed since the last tag.
+          # Only release when feat/fix or any breaking change landed.
           if echo "$subjects" | grep -qE '^(feat|fix)(\([^)]+\))?!?:' \
              || echo "$subjects" | grep -qE '^[a-z]+(\([^)]+\))?!:'; then
-            next="$(git cliff --bumped-version 2>/dev/null | sed 's/^v//')"
+            next="$(git cliff --config cliff.toml --bumped-version | sed 's/^v//')"
           else
             next=""
           fi
-          echo "Latest tag: ${latest:-<none>} | Computed next: ${next:-<none>}"
+          echo "Latest tag: ${latest:-<none>} | Next: ${next:-<none>}"
           if [ -z "$next" ] || [ "v$next" = "$latest" ]; then
-            echo "No release-worthy commits since last tag; skipping release."
+            echo "No release-worthy commits — skipping."
             echo "released=false" >> "$GITHUB_OUTPUT"
           else
-            echo "released=true" >> "$GITHUB_OUTPUT"
-            echo "version=$next" >> "$GITHUB_OUTPUT"
-            echo "tag=v$next" >> "$GITHUB_OUTPUT"
+            echo "released=true"  >> "$GITHUB_OUTPUT"
+            echo "version=$next"  >> "$GITHUB_OUTPUT"
+            echo "tag=v$next"     >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Generate changelog
+      - name: Generate CHANGELOG
         if: steps.bump.outputs.released == 'true'
-        run: git cliff --tag "${{ steps.bump.outputs.tag }}" --output CHANGELOG.md
+        run: git cliff --config cliff.toml --tag "${{ steps.bump.outputs.tag }}" --output CHANGELOG.md
 
       - name: Bump version in manifests
         if: steps.bump.outputs.released == 'true'
         run: |
           v="${{ steps.bump.outputs.version }}"
-          node -e "const f='package.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
-          node -e "const f='packages/stt-core/package.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
-          node -e "const f='src-tauri/tauri.conf.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
+          node -e "
+            const fs = require('fs');
+            ['package.json','packages/stt-core/package.json','src-tauri/tauri.conf.json'].forEach(f => {
+              const p = JSON.parse(fs.readFileSync(f,'utf8'));
+              p.version = '$v';
+              fs.writeFileSync(f, JSON.stringify(p, null, 2) + '\n');
+            });
+          "
           sed -i '0,/^version = ".*"/s//version = "'"$v"'"/' src-tauri/Cargo.toml
 
       - name: Commit, tag and push
         if: steps.bump.outputs.released == 'true'
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md package.json packages/stt-core/package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git add CHANGELOG.md package.json packages/stt-core/package.json \
+                  src-tauri/tauri.conf.json src-tauri/Cargo.toml
           git commit -m "chore(release): ${{ steps.bump.outputs.tag }} [skip ci]"
           git tag -a "${{ steps.bump.outputs.tag }}" -m "${{ steps.bump.outputs.tag }}"
           git push origin HEAD:main
           git push origin "${{ steps.bump.outputs.tag }}"
 
   build:
-    name: Build · ${{ matrix.platform }}
+    name: Build · ${{ matrix.name }}
     needs: version
     if: needs.version.outputs.released == 'true'
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - name: linux-x64
+            runner: ubuntu-22.04
+            args: ''
+            rust-targets: ''
+          - name: macos-universal
+            runner: macos-latest
             args: '--target universal-apple-darwin'
             rust-targets: 'aarch64-apple-darwin,x86_64-apple-darwin'
-          - platform: ubuntu-22.04
+          - name: windows-x64
+            runner: windows-latest
             args: ''
             rust-targets: ''
-          - platform: windows-latest
-            args: ''
-            rust-targets: ''
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.version.outputs.tag }}
 
-      - name: Install Tauri system dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Install Tauri system dependencies (Linux)
+        if: matrix.name == 'linux-x64'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -137,7 +155,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build & publish release (Tauri)
+      - name: Build & publish (Tauri)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
