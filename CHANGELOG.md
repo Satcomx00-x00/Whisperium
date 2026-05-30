@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.1.2] - 2026-05-30
+
+### Bug Fixes
+
+- *(tauri)* Unify app data dir by using plain identifier
 ## [0.1.1] - 2026-05-30
 
 ### Bug Fixes
