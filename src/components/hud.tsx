@@ -26,13 +26,34 @@ const IconButton = ({ label, onClick, children }: IconButtonProps) => (
 export function Hud() {
   const status = useSessionStore((s) => s.status);
   const device = useSessionStore((s) => s.device);
+  const deviceId = useSessionStore((s) => s.deviceId);
+  const devices = useSessionStore((s) => s.devices);
+  const setDevice = useSessionStore((s) => s.setDevice);
+  const setDevices = useSessionStore((s) => s.setDevices);
   const stop = useSessionStore((s) => s.stop);
   const cancel = useSessionStore((s) => s.cancel);
 
   const isRecording = status === 'recording';
   const levels = useAudioLevels(isRecording);
 
-  // esc cancels the session, matching the `esc` affordance in the controls.
+  // Enumerate audio input devices once on mount. Labels require a prior
+  // getUserMedia grant; on first run they may be empty strings.
+  useEffect(() => {
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((infos) => {
+        const inputs = infos
+          .filter((d) => d.kind === 'audioinput')
+          .map((d, i) => ({
+            deviceId: d.deviceId,
+            label: d.label || `Microphone ${i + 1}`,
+          }));
+        setDevices(inputs);
+      })
+      .catch(() => {});
+  }, [setDevices]);
+
+  // Esc cancels the session.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') cancel();
@@ -42,19 +63,37 @@ export function Hud() {
   }, [cancel]);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-transparent">
-      <div className="flex w-[440px] flex-col gap-1 rounded-2xl border border-white/10 bg-zinc-900/85 px-4 pt-3 pb-2 text-white shadow-2xl backdrop-blur-md">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-transparent"
+      data-tauri-drag-region
+    >
+      <div className="flex w-110 flex-col gap-1 rounded-2xl border border-white/10 bg-zinc-900/85 px-4 pt-3 pb-2 text-white shadow-2xl backdrop-blur-md">
         <Waveform levels={levels} />
 
         <div className="flex items-center justify-between text-xs">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-md px-1 py-0.5 text-white/55 transition-colors hover:text-white/90"
-            title="Input device"
-          >
+          {/* Microphone picker */}
+          <label className="flex items-center gap-1.5 rounded-md px-1 py-0.5 text-white/55 transition-colors hover:text-white/90 cursor-pointer">
             <MicIcon />
-            <span className="font-medium">{device}</span>
-          </button>
+            <select
+              value={deviceId}
+              onChange={(e) => {
+                const selected = devices.find((d) => d.deviceId === e.target.value);
+                if (selected) setDevice(selected.deviceId, selected.label);
+              }}
+              className="cursor-pointer appearance-none bg-transparent font-medium text-inherit outline-none"
+              aria-label="Microphone input device"
+            >
+              {devices.length === 0 ? (
+                <option value="default">{device}</option>
+              ) : (
+                devices.map((d) => (
+                  <option key={d.deviceId} value={d.deviceId}>
+                    {d.label}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
 
           <div className="flex items-center gap-2">
             <button

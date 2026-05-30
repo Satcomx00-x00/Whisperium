@@ -2,12 +2,20 @@ import { create } from 'zustand';
 
 type SessionStatus = 'idle' | 'recording' | 'transcribing' | 'error';
 
+type AudioDevice = {
+  deviceId: string;
+  label: string;
+};
+
 type SessionState = {
   status: SessionStatus;
   device: string;
+  deviceId: string;
+  devices: AudioDevice[];
   lastTranscript: string | null;
   setStatus: (status: SessionStatus) => void;
-  setDevice: (device: string) => void;
+  setDevice: (deviceId: string, label: string) => void;
+  setDevices: (devices: AudioDevice[]) => void;
   setLastTranscript: (text: string) => void;
   start: () => void;
   stop: () => void;
@@ -17,12 +25,13 @@ type SessionState = {
 export const useSessionStore = create<SessionState>((set) => ({
   status: 'idle',
   device: 'Default',
+  deviceId: 'default',
+  devices: [],
   lastTranscript: null,
   setStatus: (status) => set({ status }),
-  setDevice: (device) => set({ device }),
+  setDevice: (deviceId, label) => set({ deviceId, device: label }),
+  setDevices: (devices) => set({ devices }),
   setLastTranscript: (text) => set({ lastTranscript: text }),
-  // Lifecycle transitions used by the HUD controls. `stop` hands off to
-  // transcription; `cancel` (esc) aborts back to idle without transcribing.
   start: () => set({ status: 'recording' }),
   stop: () => set({ status: 'transcribing' }),
   cancel: () => set({ status: 'idle' }),
