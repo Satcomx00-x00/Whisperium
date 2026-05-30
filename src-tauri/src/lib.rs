@@ -20,8 +20,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
-            // Hide window on close instead of quitting.
+            // Force-hide on startup — WebView2 on Windows ignores `visible: false`
+            // in tauri.conf.json and shows the window during initialization.
             let window = app.get_webview_window("main").expect("main window missing");
+            let _ = window.hide();
+
             window.on_window_event({
                 let app = app.handle().clone();
                 move |event| {
