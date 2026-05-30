@@ -1,6 +1,6 @@
 [package]
 name = "whisperium"
-version = "0.2.0"
+version = "0.2.1"
 description = "Cross-platform STT widget"
 authors = []
 license = ""

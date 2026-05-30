@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.2.1] - 2026-05-30
+
+### Bug Fixes
+
+- *(tauri)* Force-hide window on startup to work around WebView2 flash
 ## [0.2.0] - 2026-05-30
 
 ### Features
