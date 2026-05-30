@@ -16,9 +16,38 @@ fn toggle_window<R: Runtime>(app: &tauri::AppHandle<R>) {
     }
 }
 
+/// Spawns a background task that silently checks for an available update and,
+/// if one exists, emits `update://available` to the frontend with metadata.
+/// All errors are swallowed — the check is best-effort.
+fn spawn_update_check(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        // Small delay so the window is fully initialised before we hit the network.
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+
+        let updater = match app.updater() {
+            Ok(u) => u,
+            Err(_) => return,
+        };
+
+        let update = match updater.check().await {
+            Ok(Some(u)) => u,
+            _ => return,
+        };
+
+        let payload = serde_json::json!({
+            "version": update.version,
+            "date":    update.date.map(|d| d.to_string()),
+            "body":    update.body,
+        });
+
+        let _ = app.emit("update://available", payload);
+    });
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // Force-hide on startup — WebView2 on Windows ignores `visible: false`
             // in tauri.conf.json and shows the window during initialization.
@@ -69,6 +98,8 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            spawn_update_check(app.handle().clone());
 
             Ok(())
         })

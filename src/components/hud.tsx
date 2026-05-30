@@ -1,9 +1,13 @@
+import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
 
 import { MicIcon, PauseIcon, PinIcon, SettingsIcon } from '@/components/icons';
+import { UpdateBadge } from '@/components/update-badge';
 import { Waveform } from '@/components/waveform';
 import { useAudioLevels } from '@/hooks/use-audio-levels';
 import { useSessionStore } from '@/store/session';
+import { useUpdateStore } from '@/store/update';
+import type { UpdateInfo } from '@/store/update';
 
 type IconButtonProps = {
   label: string;
@@ -32,9 +36,20 @@ export function Hud() {
   const setDevices = useSessionStore((s) => s.setDevices);
   const stop = useSessionStore((s) => s.stop);
   const cancel = useSessionStore((s) => s.cancel);
+  const setUpdateAvailable = useUpdateStore((s) => s.setAvailable);
 
   const isRecording = status === 'recording';
   const levels = useAudioLevels(isRecording);
+
+  // Subscribe to the update-available event emitted by the Rust updater check.
+  useEffect(() => {
+    const unlisten = listen<UpdateInfo>('update://available', (event) => {
+      setUpdateAvailable(event.payload);
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [setUpdateAvailable]);
 
   // Enumerate audio input devices once on mount. Labels require a prior
   // getUserMedia grant; on first run they may be empty strings.
@@ -117,6 +132,7 @@ export function Hud() {
               <IconButton label="Settings">
                 <SettingsIcon />
               </IconButton>
+              <UpdateBadge />
             </div>
 
             <span className="h-3 w-px bg-white/15" aria-hidden="true" />

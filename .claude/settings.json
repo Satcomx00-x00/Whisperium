@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cargo check *)",
+      "PowerShell($env:Path += \";$env:USERPROFILE\\\\.cargo\\\\bin\"; Set-Location \"c:\\\\Users\\\\satcom\\\\Documents\\\\Dev\\\\Whisperium\\\\src-tauri\"; cargo check 2>&1)",
+      "Bash(pnpm add *)"
     ]
   }
 }

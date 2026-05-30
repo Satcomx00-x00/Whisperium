@@ -159,10 +159,15 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_COMMIT_SHA: ${{ github.sha }}
+          VITE_BUILD_DATE: ${{ needs.version.outputs.tag }}
         with:
           tagName: ${{ needs.version.outputs.tag }}
           releaseName: 'whisperium ${{ needs.version.outputs.tag }}'
           releaseBody: 'See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.'
           releaseDraft: false
           prerelease: false
+          updaterJsonKeepUniversal: true
           args: ${{ matrix.args }}

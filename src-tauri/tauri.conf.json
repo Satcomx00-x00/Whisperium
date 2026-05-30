@@ -36,5 +36,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRCOTk3NUFFOUE2NjRGNjMKUldSalQyYWFybldaUzJmamxXd1FnR2FsWDRuQ091ZTA1NlZvZlo2aFZGWEZ2UzBlUURYY3JOcmYK",
+      "endpoints": [
+        "https://github.com/Satcomx00-x00/Whisperium/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
