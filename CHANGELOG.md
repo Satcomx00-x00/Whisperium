@@ -1,11 +1,20 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.3.1] - 2026-05-30
+
+### Bug Fixes
+
+- *(ci)* Correct rustfmt line length and setDevice test signature
 ## [0.3.0] - 2026-05-30
 
 ### Features
 
 - *(hud)* Draggable window and microphone device picker
+
+### Miscellaneous
+
+- Add auto update
 ## [0.2.1] - 2026-05-30
 
 ### Bug Fixes
