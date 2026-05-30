@@ -1,89 +1,29 @@
 name: Release
 
+# Triggered by a version tag (vX.Y.Z) created by auto-release.yml. This
+# workflow only builds and publishes the cross-platform artifacts for the
+# tag — versioning, changelog and tagging are owned by auto-release.yml.
+# Can also be started manually against an existing tag via workflow_dispatch.
+
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to build (e.g. v0.1.0)'
+        required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-main
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  version:
-    name: Version & changelog
-    runs-on: ubuntu-latest
-    outputs:
-      released: ${{ steps.bump.outputs.released }}
-      version: ${{ steps.bump.outputs.version }}
-      tag: ${{ steps.bump.outputs.tag }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install git-cliff
-        uses: taiki-e/install-action@v2
-        with:
-          tool: git-cliff
-
-      - name: Determine next version
-        id: bump
-        run: |
-          latest="$(git tag --sort=-v:refname | head -n1)"
-          range="HEAD"
-          [ -n "$latest" ] && range="$latest..HEAD"
-          subjects="$(git log "$range" --format='%s')"
-          # Release only when feat/fix or a breaking change (`type!:`) landed since the last tag.
-          if echo "$subjects" | grep -qE '^(feat|fix)(\([^)]+\))?!?:' \
-             || echo "$subjects" | grep -qE '^[a-z]+(\([^)]+\))?!:'; then
-            next="$(git cliff --bumped-version 2>/dev/null | sed 's/^v//')"
-          else
-            next=""
-          fi
-          echo "Latest tag: ${latest:-<none>} | Computed next: ${next:-<none>}"
-          if [ -z "$next" ] || [ "v$next" = "$latest" ]; then
-            echo "No release-worthy commits since last tag; skipping release."
-            echo "released=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "released=true" >> "$GITHUB_OUTPUT"
-            echo "version=$next" >> "$GITHUB_OUTPUT"
-            echo "tag=v$next" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Generate changelog
-        if: steps.bump.outputs.released == 'true'
-        run: git cliff --tag "${{ steps.bump.outputs.tag }}" --output CHANGELOG.md
-
-      - name: Bump version in manifests
-        if: steps.bump.outputs.released == 'true'
-        run: |
-          v="${{ steps.bump.outputs.version }}"
-          node -e "const f='package.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
-          node -e "const f='packages/stt-core/package.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
-          node -e "const f='src-tauri/tauri.conf.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
-          sed -i '0,/^version = ".*"/s//version = "'"$v"'"/' src-tauri/Cargo.toml
-
-      - name: Commit, tag and push
-        if: steps.bump.outputs.released == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md package.json packages/stt-core/package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
-          git commit -m "chore(release): ${{ steps.bump.outputs.tag }} [skip ci]"
-          git tag -a "${{ steps.bump.outputs.tag }}" -m "${{ steps.bump.outputs.tag }}"
-          git push origin HEAD:main
-          git push origin "${{ steps.bump.outputs.tag }}"
-
   build:
     name: Build · ${{ matrix.platform }}
-    needs: version
-    if: needs.version.outputs.released == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -98,11 +38,13 @@ jobs:
             args: ''
             rust-targets: ''
     runs-on: ${{ matrix.platform }}
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.version.outputs.tag }}
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Install Tauri system dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -142,8 +84,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ needs.version.outputs.tag }}
-          releaseName: 'whisperium ${{ needs.version.outputs.tag }}'
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: 'whisperium ${{ env.RELEASE_TAG }}'
           releaseBody: 'See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.'
           releaseDraft: false
           prerelease: false

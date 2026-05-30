@@ -55,12 +55,22 @@ jobs:
         if: steps.version.outputs.release == 'true'
         run: git cliff --config cliff.toml --bump --tag "${{ steps.version.outputs.next }}" -o CHANGELOG.md
 
+      - name: Bump version in manifests
+        if: steps.version.outputs.release == 'true'
+        run: |
+          v="${{ steps.version.outputs.next }}"
+          v="${v#v}"
+          node -e "const f='package.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
+          node -e "const f='packages/stt-core/package.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
+          node -e "const f='src-tauri/tauri.conf.json',p=require('./'+f);p.version='$v';require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
+          sed -i '0,/^version = ".*"/s//version = "'"$v"'"/' src-tauri/Cargo.toml
+
       - name: Commit, tag and push
         if: steps.version.outputs.release == 'true'
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add CHANGELOG.md
+          git add CHANGELOG.md package.json packages/stt-core/package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
           git commit -m "chore(release): ${{ steps.version.outputs.next }}"
           git tag -a "${{ steps.version.outputs.next }}" -m "${{ steps.version.outputs.next }}"
           git push origin HEAD:main
