@@ -28,6 +28,6 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", "target", "src-tauri/gen"]
+    "ignore": ["node_modules", "dist", "target", "src-tauri/gen", ".claude"]
   }
 }
