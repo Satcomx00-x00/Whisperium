@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.3.3] - 2026-05-30
+
+### Bug Fixes
+
+- *(hud)* Render tooltip downward via portal to avoid window clipping
 ## [0.3.2] - 2026-05-30
 
 ### Bug Fixes
