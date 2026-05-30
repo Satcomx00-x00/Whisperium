@@ -1,7 +1,7 @@
 {
   "productName": "whisperium",
   "version": "0.1.1",
-  "identifier": "com.satcom.whisperium",
+  "identifier": "whisperium",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
