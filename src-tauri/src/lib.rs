@@ -71,7 +71,11 @@ pub fn run() {
             let menu = Menu::with_items(app, &[&show_hide, &separator, &quit])?;
 
             TrayIconBuilder::new()
-                .icon(app.default_window_icon().cloned().expect("app icon missing"))
+                .icon(
+                    app.default_window_icon()
+                        .cloned()
+                        .expect("app icon missing"),
+                )
                 .tooltip("whisperium")
                 .menu(&menu)
                 .show_menu_on_left_click(false)

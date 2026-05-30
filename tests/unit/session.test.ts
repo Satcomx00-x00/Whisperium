@@ -26,8 +26,9 @@ describe('session store', () => {
   });
 
   it('updates the active device when setDevice is called', () => {
-    useSessionStore.getState().setDevice('MacBook Microphone');
+    useSessionStore.getState().setDevice('device-123', 'MacBook Microphone');
     expect(useSessionStore.getState().device).toBe('MacBook Microphone');
+    expect(useSessionStore.getState().deviceId).toBe('device-123');
   });
 
   it('sets status directly when setStatus is called', () => {
