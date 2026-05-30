@@ -1,6 +1,16 @@
 # Changelog
 
 All notable changes to this project are documented in this file.
+## [0.1.1] - 2026-05-30
+
+### Bug Fixes
+
+- *(ci)* Exclude .claude directory from Biome and git
+
+### Miscellaneous
+
+- Cleanup
+- Release test
 ## [0.1.0] - 2026-05-30
 
 ### Bug Fixes
@@ -28,5 +38,5 @@ All notable changes to this project are documented in this file.
 - Rename project voxbar → whisperium + add CONVENTIONS.md
 - *(ci)* Enforce conventional commits via commitlint
 - *(ci)* Add git-cliff changelog and auto-release on main
-## [0.0.0] - 2026-05-28
+- *(deps)* Update JS dependencies to latest within-major versions
 
